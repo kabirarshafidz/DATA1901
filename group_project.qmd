@@ -1,0 +1,12 @@
+---
+title: "DATA1901"
+format: 
+  html:
+    embed-resources: true
+    code-fold: true
+editor: visual
+---
+
+```{r}
+head(iris)
+```

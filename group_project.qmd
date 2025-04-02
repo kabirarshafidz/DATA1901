@@ -7,6 +7,208 @@ format:
 editor: visual
 ---
 
+# Executive Summary
+
+# Initial Data Analysis
+
+Source, structure, reclassification, limitation of data collection, assumptions, define meaning of key variables, describe any assumption (idea about the data), data cleaning.
+
 ```{r}
-head(iris)
+library(readxl)
+sheets = excel_sheets("all_data.xlsx")
+print(sheets)
 ```
+
+```{r}
+all_data = read_excel("all_data.xlsx", sheet = sheets[5])
+head(all_data)
+```
+
+```{r}
+library(dplyr)
+
+data = all_data %>% select(age, gender, env, choice, BSSQ_5, ASSQ_5)
+head(data)
+```
+
+```{r}
+mutated_data = mutate(data, focus_lvl_diff = ASSQ_5 - BSSQ_5)
+head(mutated_data)
+```
+
+```{r}
+filtered_data <- filter(mutated_data, gender != 'Other')
+head(filtered_data)
+```
+
+cleaning: data row yang gender other remove
+
+# Research Questions
+
+## Research Question 1
+
+```{r}
+library(tidyverse)
+
+ggplot(filtered_data, aes(x=age, y=focus_lvl_diff)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x="Age",
+       y="Difference in Focus Level",
+       title="Age vs ∆ Focus") 
+```
+
+```{r}
+library(ggplot2)
+library(plotly)
+
+p = ggplot(filtered_data, aes(x=age, y=focus_lvl_diff, colour = gender)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x="Age",
+       y="Difference in Focus Level",
+       title="Age vs ∆ Focus") 
+
+ggplotly(p)
+```
+
+```{r}
+p = ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = env)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x="Age",
+       y="Difference in Focus Level",
+       title="Age vs ∆ Focus") 
+
+ggplotly(p)
+```
+
+```{r}
+ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = choice)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x="Age",
+       y="Difference in Focus Level",
+       title="Age vs ∆ Focus") 
+```
+
+```{r}
+library(ggplot2)
+
+# Fitting the model
+model = lm(focus_lvl_diff ~ age, data = mutated_data)
+
+# Create a residual plot
+ggplot(model, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
+  labs(title = "Residuals vs. Fitted Values")
+```
+
+```{r}
+filtered_snowy = filter(mutated_data, env == 'Snowy')
+filtered_sunny = filter(mutated_data, env == 'Sunny')
+```
+
+```{r}
+model_snowy = lm(focus_lvl_diff ~ age, data = filtered_snowy)
+
+# Create a residual plot
+ggplot(model_snowy, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
+  labs(title = "Residuals vs. Fitted Values")
+```
+
+```{r}
+model_sunny = lm(focus_lvl_diff ~ age, data = filtered_sunny)
+
+# Create a residual plot
+ggplot(model_sunny, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
+  labs(title = "Residuals vs. Fitted Values")
+```
+
+how to plot the residual for both models? should we make two different tables?
+
+## Research Question 2
+
+# Articles
+
+2 articles max 50 words
+
+# Acknowledgement
+
+# References
+
+```{r}
+library(readxl)
+sheets = excel_sheets("all_data.xlsx")
+print(sheets)
+```
+
+```{r}
+all_data = read_excel("all_data.xlsx", sheet = sheets[5])
+head(all_data)
+```
+
+::: panel-tabset
+## header 1
+
+```{r}
+library(dplyr)
+
+data = all_data %>% select(age, BSSQ_5, ASSQ_5)
+head(data)
+```
+
+```{r}
+mutated_data = mutate(data, focus_lvl_diff = ASSQ_5 - BSSQ_5)
+head(mutated_data)
+```
+
+## header 2
+
+*very important* **No**
+
+-   bullet
+-   bullet
+
+```{r}
+library(tidyverse)
+
+ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = gender)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x="Age",
+       y="Difference in Focus Level",
+       title="Age vs ∆ Focus") 
+```
+:::
+
+```{r}
+library(ggplot2)
+
+
+# Fitting the model
+model = lm(focus_lvl_diff ~ age, data = mutated_data)
+
+# Create a residual plot
+ggplot(model, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
+  labs(title = "Residuals vs. Fitted Values")
+```
+
+```{r}
+ggplot(mutated_data, aes(x=age)) + geom_histogram()
+```
+
+```{r}
+ggplot(mutated_data, aes(x=focus_lvl_diff)) + geom_bar()
+```
+
+just say that lm isn't the perfect fit for the data. Dive deeper to the data, look into journals abt the correlation you're researching.
+
+how the effect of using vr

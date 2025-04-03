@@ -177,13 +177,12 @@ head(mutated_data)
 
 ```{r}
 library(tidyverse)
-
-ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = gender)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) + 
-  labs(x="Age",
-       y="Difference in Focus Level",
-       title="Age vs ∆ Focus") 
+# ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = gender)) +
+  #geom_point() + 
+  #geom_smooth(method = "lm", se = FALSE) + 
+  #labs(x="Age",
+   #    y="Difference in Focus Level",
+    #   title="Age vs ∆ Focus") 
 ```
 :::
 

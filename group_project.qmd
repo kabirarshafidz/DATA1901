@@ -27,64 +27,57 @@ head(all_data)
 ```{r}
 library(dplyr)
 
-data = all_data %>% select(age, gender, env, choice, BSSQ_5, ASSQ_5)
+data = all_data %>% select(age, env, BSSQ_5, ASSQ_5)
 head(data)
 ```
 
 ```{r}
+library(tidyverse)
 mutated_data = mutate(data, focus_lvl_diff = ASSQ_5 - BSSQ_5)
+
+mutated_data = na.omit(mutated_data)
 head(mutated_data)
 ```
 
+# Research Questions
+
 ```{r}
-filtered_data <- filter(mutated_data, gender != 'Other')
-head(filtered_data)
+ggplot(mutated_data, aes(x = age)) + 
+  geom_histogram(aes(y = after_stat(density)), bins = 15, color = "red", fill = "orange") +
+  stat_function(fun = dnorm, 
+                args = list(mean = mean(mutated_data$age), sd = sd(mutated_data$age)))
 ```
 
-cleaning: data row yang gender other remove
+```{r}
+ggplot(mutated_data, aes(x=BSSQ_5)) + geom_bar()
+ggplot(mutated_data, aes(x=ASSQ_5)) + geom_bar()
+```
 
-# Research Questions
+```{r}
+ggplot(mutated_data, aes(x=focus_lvl_diff)) + geom_bar()
+```
+
+```{r}
+library(RColorBrewer)
+
+Pie1=select(mutated_data, env)
+data_agg <- Pie1 %>%
+  count(env)
+
+colors <- brewer.pal(n = length(unique(Pie1$env)), name = "Blues")
+
+fig <- plot_ly(data_agg, labels = ~env, values = ~n, type = 'pie', marker = list(colors = colors))
+fig <- fig %>% layout(title = 'Distribution of Environment',
+                      showlegend = TRUE)
+fig
+```
 
 ## Research Question 1
 
 ```{r}
 library(tidyverse)
 
-ggplot(filtered_data, aes(x=age, y=focus_lvl_diff)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) + 
-  labs(x="Age",
-       y="Difference in Focus Level",
-       title="Age vs ∆ Focus") 
-```
-
-```{r}
-library(ggplot2)
-library(plotly)
-
-p = ggplot(filtered_data, aes(x=age, y=focus_lvl_diff, colour = gender)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) + 
-  labs(x="Age",
-       y="Difference in Focus Level",
-       title="Age vs ∆ Focus") 
-
-ggplotly(p)
-```
-
-```{r}
-p = ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = env)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) + 
-  labs(x="Age",
-       y="Difference in Focus Level",
-       title="Age vs ∆ Focus") 
-
-ggplotly(p)
-```
-
-```{r}
-ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = choice)) +
+ggplot(mutated_data, aes(x=age, y=focus_lvl_diff)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) + 
   labs(x="Age",
@@ -103,6 +96,19 @@ ggplot(model, aes(x = .fitted, y = .resid)) +
   geom_point() +
   geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
   labs(title = "Residuals vs. Fitted Values")
+```
+
+```{r}
+library(ggplot2)
+library(plotly)
+p = ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = env)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x="Age",
+       y="Difference in Focus Level",
+       title="Age vs ∆ Focus") 
+
+ggplotly(p)
 ```
 
 ```{r}
@@ -130,8 +136,6 @@ ggplot(model_sunny, aes(x = .fitted, y = .resid)) +
   labs(title = "Residuals vs. Fitted Values")
 ```
 
-how to plot the residual for both models? should we make two different tables?
-
 ## Research Question 2
 
 # Articles
@@ -141,17 +145,6 @@ how to plot the residual for both models? should we make two different tables?
 # Acknowledgement
 
 # References
-
-```{r}
-library(readxl)
-sheets = excel_sheets("all_data.xlsx")
-print(sheets)
-```
-
-```{r}
-all_data = read_excel("all_data.xlsx", sheet = sheets[5])
-head(all_data)
-```
 
 ::: panel-tabset
 ## header 1
@@ -185,28 +178,6 @@ library(tidyverse)
     #   title="Age vs ∆ Focus") 
 ```
 :::
-
-```{r}
-library(ggplot2)
-
-
-# Fitting the model
-model = lm(focus_lvl_diff ~ age, data = mutated_data)
-
-# Create a residual plot
-ggplot(model, aes(x = .fitted, y = .resid)) +
-  geom_point() +
-  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
-  labs(title = "Residuals vs. Fitted Values")
-```
-
-```{r}
-ggplot(mutated_data, aes(x=age)) + geom_histogram()
-```
-
-```{r}
-ggplot(mutated_data, aes(x=focus_lvl_diff)) + geom_bar()
-```
 
 just say that lm isn't the perfect fit for the data. Dive deeper to the data, look into journals abt the correlation you're researching.
 

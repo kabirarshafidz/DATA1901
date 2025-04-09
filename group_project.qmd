@@ -1,9 +1,12 @@
 ---
-title: "DATA1901"
+title: "DATA1901 Project 1"
 format: 
   html:
+    toc: true
+    html-math-method: katex
     embed-resources: true
     code-fold: true
+    theme: lux
 editor: visual
 ---
 
@@ -11,10 +14,40 @@ editor: visual
 
 # Initial Data Analysis
 
-Source, structure, reclassification, limitation of data collection, assumptions, define meaning of key variables, describe any assumption (idea about the data), data cleaning.
+The data analysis in this report is based on the study “Socially Acquired Nocebo Effects Generalize but Are Not Attenuated by Choice”. 
+
+The study was conducted on “a community sample of healthy individuals $(N = 336)$” (Saunders, 2023). This report focuses on four variables: `age` (discrete), `env` : VR Environment Experienced \[snowy/sunny\] (nominal), `BSSQ_5`: Baseline SSQ Item \[Difficulty Focusing\] (ordinal), `ASSQ_5`: Active SSQ Item \[Difficulty Focusing\] (ordinal). The change in difficulty focusing, `diff_focus_change`, is calculated as
+
+$$
+\mathrm{diff\_focus\_change} = \mathrm{ASSQ\_5} - \mathrm{BSSQ\_5}
+$$
+
+The data was grouped based on `env`. No reclassification was done. 
+
+Possible limitations include subjectivity in measurements, as the participants rate `BSSQ_5` and `ASSQ_5` themselves. Voluntary participation is a possible limitation. An important portion of the participants were recruited by Facebook advertisements. People who are more interested in VR might participate, so the results might not apply to the average person. The study was conducted on only Australians, therefore the results might not apply to another demographic. Confounding variables may also be unaccounted for.
+
+Assumptions include: 
+
+-   Participants have the same definition for each scale of difficulty focusing and they have accurately reported their levels of focus.
+
+-   Since the study was conducted on Zoom, the participant’s environment is assumed to not have affected their focus. 
+
+-   That difference in focus `BSSQ_5 - ASSQ_5` is a meaningful measure for measuring change in focus levels
+
+For this analysis, we performed a data mutation by decreasing `ASSQ_5` by `BSSQ_5` to determine the change in focus for each participant. Looking at the difference allows us to observe the effect of going through VR, as opposed to just the baseline or active value which doesn’t provide insight about the participant’s experience.
 
 ```{r}
 library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(RColorBrewer)
+library(gganimate)
+library(gifski)
+```
+
+```{r}
 sheets = excel_sheets("all_data.xlsx")
 print(sheets)
 ```
@@ -25,41 +58,98 @@ head(all_data)
 ```
 
 ```{r}
-library(dplyr)
-
 data = all_data %>% select(age, env, BSSQ_5, ASSQ_5)
 head(data)
 ```
 
 ```{r}
-library(tidyverse)
 mutated_data = mutate(data, focus_lvl_diff = ASSQ_5 - BSSQ_5)
-
-mutated_data = na.omit(mutated_data)
-head(mutated_data)
+mutated_data
 ```
 
-# Research Questions
-
 ```{r}
+
 ggplot(mutated_data, aes(x = age)) + 
-  geom_histogram(aes(y = after_stat(density)), bins = 15, color = "red", fill = "orange") +
-  stat_function(fun = dnorm, 
-                args = list(mean = mean(mutated_data$age), sd = sd(mutated_data$age)))
+    geom_histogram(aes(y = after_stat(density)), bins = 15, color = "red", fill = "orange") + 
+    stat_function(fun = dnorm, 
+                  args = list(mean = mean(mutated_data$age), sd = sd(mutated_data$age)))
 ```
 
 ```{r}
-ggplot(mutated_data, aes(x=BSSQ_5)) + geom_bar()
-ggplot(mutated_data, aes(x=ASSQ_5)) + geom_bar()
+p = ggplot(mutated_data, aes(x=BSSQ_5)) + geom_bar(color = "red", fill = "orange")
+q = ggplot(mutated_data, aes(x=ASSQ_5)) + geom_bar(color = "red", fill = "orange")
+ggplotly(p)
+ggplotly(q)
+```
+
+# Research Question
+
+```{r}
+p = ggplot(mutated_data, aes(x=focus_lvl_diff)) + geom_bar(color = "red", fill = "orange")
+ggplotly(p)
 ```
 
 ```{r}
-ggplot(mutated_data, aes(x=focus_lvl_diff)) + geom_bar()
+# Create animation by revealing points one by one
+animated_data <- mutated_data %>%
+  mutate(id = row_number())
+
+# Create the scatterplot animation
+p_animated <- ggplot(animated_data, aes(x = age, y = focus_lvl_diff)) +
+  geom_point(size = 3, alpha = 0.7) +
+  labs(x = "Age",
+       y = "Difference in Focus Level",
+       title = "Age vs ∆ Focus") +
+  # Animate by adding one point at a time
+  transition_states(
+    id,
+    transition_length = 0.5,  # Reduce transition time
+    state_length = 0.5        # Reduce state time
+  ) +
+  ease_aes('sine-in-out') +
+  # Use fixed number instead of nframes 
+  labs(title = "Age vs ∆ Focus: Observation {closest_state} of 336") +
+  shadow_mark(past = TRUE, alpha = 0.3)
+
+# Render and save the animation with fixed parameters
+anim <- animate(p_animated, 
+                renderer = gifski_renderer(), 
+                fps = 10, 
+                duration = 12,
+                width = 800, 
+                height = 500,
+                nframes = 336)
+
+anim
 ```
 
 ```{r}
-library(RColorBrewer)
+correlation = cor(mutated_data$focus_lvl_diff, mutated_data$age)
+print(paste("r =", correlation))
+model = lm(focus_lvl_diff ~ age, data = mutated_data)
+summary(model)
+```
 
+```{r}
+p = ggplot(mutated_data, aes(x=age, y=focus_lvl_diff)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(x="Age",
+       y="Difference in Focus Level",
+       title="Age vs ∆ Focus") 
+ggplotly(p)
+```
+
+```{r}
+p = ggplot(model, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
+  labs(title = "Residuals vs. Fitted Values")
+
+ggplotly(p)
+```
+
+```{r}
 Pie1=select(mutated_data, env)
 data_agg <- Pie1 %>%
   count(env)
@@ -72,35 +162,7 @@ fig <- fig %>% layout(title = 'Distribution of Environment',
 fig
 ```
 
-## Research Question 1
-
 ```{r}
-library(tidyverse)
-
-ggplot(mutated_data, aes(x=age, y=focus_lvl_diff)) +
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) + 
-  labs(x="Age",
-       y="Difference in Focus Level",
-       title="Age vs ∆ Focus") 
-```
-
-```{r}
-library(ggplot2)
-
-# Fitting the model
-model = lm(focus_lvl_diff ~ age, data = mutated_data)
-
-# Create a residual plot
-ggplot(model, aes(x = .fitted, y = .resid)) +
-  geom_point() +
-  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
-  labs(title = "Residuals vs. Fitted Values")
-```
-
-```{r}
-library(ggplot2)
-library(plotly)
 p = ggplot(mutated_data, aes(x=age, y=focus_lvl_diff, colour = env)) +
   geom_point() + 
   geom_smooth(method = "lm", se = FALSE) + 
@@ -117,26 +179,43 @@ filtered_sunny = filter(mutated_data, env == 'Sunny')
 ```
 
 ```{r}
+print("SNOWY MODEl")
+correlation_snowyy = cor(filtered_snowy$focus_lvl_diff, filtered_snowy$age)
+print(paste("r =", correlation_snowyy))
 model_snowy = lm(focus_lvl_diff ~ age, data = filtered_snowy)
+summary(model_snowy)
+```
 
-# Create a residual plot
-ggplot(model_snowy, aes(x = .fitted, y = .resid)) +
+```{r}
+print("SUNNY MODEL")
+correlation_sunny = cor(filtered_sunny$focus_lvl_diff, filtered_sunny$age)
+print(paste("r =", correlation_sunny))
+model_sunny = lm(focus_lvl_diff ~ age, data = filtered_sunny)
+summary(model_sunny)
+```
+
+```{r}
+p = ggplot(model_snowy, aes(x = .fitted, y = .resid)) +
   geom_point() +
   geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
-  labs(title = "Residuals vs. Fitted Values")
+  labs(title = "Residuals vs. Fitted Values (Snowy)")
+
+ggplotly(p)
 ```
 
 ```{r}
 model_sunny = lm(focus_lvl_diff ~ age, data = filtered_sunny)
-
-# Create a residual plot
-ggplot(model_sunny, aes(x = .fitted, y = .resid)) +
-  geom_point() +
-  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
-  labs(title = "Residuals vs. Fitted Values")
+summary(model_sunny)
 ```
 
-## Research Question 2
+```{r}
+p = ggplot(model_sunny, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
+  labs(title = "Residuals vs. Fitted Values (Sunny)")
+
+ggplotly(p)
+```
 
 # Articles
 
